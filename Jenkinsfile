@@ -104,5 +104,6 @@ pipeline {
                  Jenkins
                  """
         }
+    }
 }
 
