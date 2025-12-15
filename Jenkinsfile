@@ -69,5 +69,40 @@ pipeline {
             }
         }
     }
+    post {
+        success {
+            mail to: 'srinathmuthyala99@gmail.com',
+                 subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: """
+                 Hi Team,
+
+                 Jenkins Job: ${env.JOB_NAME}
+                 Build Number: ${env.BUILD_NUMBER}
+                 Status: SUCCESS
+
+                 Build URL:
+                 ${env.BUILD_URL}
+
+                 Regards,
+                 Jenkins
+                 """
+        }
+        failure {
+            mail to: 'srinathmuthyala99@gmail.com',
+                 subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: """
+                 Hi Team,
+
+                 Jenkins Job: ${env.JOB_NAME}
+                 Build Number: ${env.BUILD_NUMBER}
+                 Status: FAILED
+
+                 Please check the logs:
+                 ${env.BUILD_URL}
+
+                 Regards,
+                 Jenkins
+                 """
+        }
 }
 
