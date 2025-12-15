@@ -10,7 +10,7 @@ pipeline {
         //Pulls application source code from Git repository
         stage('Checkout') {                                    
             steps {
-                git branch: 'main',
+                git branch: 'master',
                     url: 'https://github.com/srinathsidhu12/Jenkins_parallel_pipeline.git'
             }
         }
