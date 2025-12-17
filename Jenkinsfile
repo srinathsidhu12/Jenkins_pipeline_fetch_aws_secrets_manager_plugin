@@ -46,8 +46,6 @@ pipeline {
 
         stage('Pushing image to DockerHub using AWS Secrets Manager') {
             steps {
-              // withAWS block tells Jenkins to use the IAM Role
-               withAWS(region: 'ap-south-1') {
                     script {
                         // Fetch the secret value from AWS Secrets Manager
                         // --secret-id : name of the secret in AWS
