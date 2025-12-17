@@ -83,8 +83,8 @@ pipeline {
                              -u "${dockerUser}" \
                              --password-stdin
 
-                       // Push the Docker image (built earlier) to DockerHub
-                       // Image tag uses Jenkins BUILD_NUMBER for versioning
+                        # Push the Docker image (built earlier) to DockerHub
+                        # Image tag uses Jenkins BUILD_NUMBER for versioning
                        docker push $IMAGE_NAME:$IMAGE_TAG
                        """
                   }
