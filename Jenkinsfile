@@ -61,20 +61,26 @@ pipeline {
                             returnStdout: true      // Capture command output into a variable
                          ).trim()                  // Remove extra whitespace/newlines
 
-                        // Convert the secret JSON string into a Groovy object
-                        // Expected secret format:
-                        // {
-                        //   "username": "dockerhub_user",
-                        //   "password": "dockerhub_password"
-                        // }
-                        def secret = readJSON text: secretJson
+                        // Extract DockerHub username from secret JSON using jq
+                        def dockerUser = sh(
+                            script: "echo '${secretJson}' | jq -r .username",
+                            returnStdout: true
+                        ).trim()
+                        
+                        // Extract DockerHub password from secret JSON using jq
+                        def dockerPass = sh(
+                            script: "echo '${secretJson}' | jq -r .password",
+                            returnStdout: true
+                        ).trim()
+
+
 
                         // Login to DockerHub securely
                         // Password is passed via STDIN (not visible in logs)
                         // This avoids exposing credentials in Jenkins console output
                         sh """
-                          echo "${secret.password}" | docker login \
-                             -u "${secret.username}" \
+                          echo "${dockerPass}" | docker login \
+                             -u "${dockerUser}" \
                              --password-stdin
 
                        // Push the Docker image (built earlier) to DockerHub
