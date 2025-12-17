@@ -47,7 +47,7 @@ pipeline {
         stage('Pushing image dockerhub using AWS secrets Manager') {
             steps {
                 withCredentials([usernamePassword(
-                        credentialsId: 'my_dockerhub_creds',
+                        credentialsId: 'my_dockerhub_cred',
                         usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_PASS'
                 )]) {
