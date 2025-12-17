@@ -86,7 +86,6 @@ pipeline {
                   }
               } 
            }
-         }
        }
         stage('Deploy Container') {
             steps {
