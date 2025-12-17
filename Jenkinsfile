@@ -44,50 +44,29 @@ pipeline {
             }
         }
 
-        stage('Pushing image to DockerHub using AWS Secrets Manager') {
+        stage('Push to DockerHub using aws secret manager credentials') {
             steps {
-                    script {
-                        // Fetch the secret value from AWS Secrets Manager
-                        // --secret-id : name of the secret in AWS
-                        // --query SecretString : extracts only the actual secret data
-                        // --output text : removes JSON metadata and returns clean output
-                        def secretJson = sh(
-                            script: '''
-                            aws secretsmanager get-secret-value \
-                             --secret-id my_dockerhub_cred \
-                             --query SecretString \
-                             --output text
-                            ''',
-                            returnStdout: true      // Capture command output into a variable
-                         ).trim()                  // Remove extra whitespace/newlines
+               script {
+                    sh """
+                        set +x
 
-                        // Extract DockerHub username from secret JSON using jq
-                        def dockerUser = sh(
-                            script: "echo '${secretJson}' | jq -r .username",
-                            returnStdout: true
-                        ).trim()
-                        
-                        // Extract DockerHub password from secret JSON using jq
-                        def dockerPass = sh(
-                            script: "echo '${secretJson}' | jq -r .password",
-                            returnStdout: true
-                        ).trim()
+                        # Fetch secret JSON
+                        secretJson=\$(aws secretsmanager get-secret-value \
+                          --secret-id my_dockerhub_cred \
+                          --query SecretString --output text)
 
-                        //// 🔐 Disable command echoing BEFORE using secrets
-                        sh """
-                         set +x
-                         # Login to DockerHub securely
-                         
-                         echo "${dockerPass}" | docker login \
-                             -u "${dockerUser}" \
-                             --password-stdin
+                        # Extract username and password
+                        dockerUser=\$(echo "\$secretJson" | jq -r .username)
+                        dockerPass=\$(echo "\$secretJson" | jq -r .password)
 
-                        # Push the Docker image (built earlier) to DockerHub
-                        # Image tag uses Jenkins BUILD_NUMBER for versioning
-                       docker push $IMAGE_NAME:$IMAGE_TAG
-                       """
-                  }
-              } 
+                        # Login and push
+                        echo "\$dockerPass" | docker login -u "\$dockerUser" --password-stdin
+                        docker push $IMAGE_NAME:$IMAGE_TAG
+
+                        set -x
+                    """
+              }
+           }
         }
         stage('Deploy Container') {
             steps {
