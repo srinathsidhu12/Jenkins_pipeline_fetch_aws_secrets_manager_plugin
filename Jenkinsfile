@@ -44,22 +44,50 @@ pipeline {
             }
         }
 
-        stage('Pushing image dockerhub using AWS secrets Manager') {
+        stage('Pushing image to DockerHub using AWS Secrets Manager') {
             steps {
-                withCredentials([usernamePassword(
-                        credentialsId: 'my_dockerhub_cred',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    //Login to DockerHub securely and Push image to remote registry
-                    sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin    
-                    docker push $IMAGE_NAME:$IMAGE_TAG     
-                    '''
-                }
-            }
-        }
+              // withAWS block tells Jenkins to use the IAM Role
+               withAWS(region: 'ap-south-1') {
+                    script {
+                        // Fetch the secret value from AWS Secrets Manager
+                        // --secret-id : name of the secret in AWS
+                        // --query SecretString : extracts only the actual secret data
+                        // --output text : removes JSON metadata and returns clean output
+                        def secretJson = sh(
+                            script: '''
+                            aws secretsmanager get-secret-value \
+                             --secret-id dockerhub/credentials \
+                             --query SecretString \
+                             --output text
+                            ''',
+                            returnStdout: true      // Capture command output into a variable
+                         ).trim()                  // Remove extra whitespace/newlines
 
+                        // Convert the secret JSON string into a Groovy object
+                        // Expected secret format:
+                        // {
+                        //   "username": "dockerhub_user",
+                        //   "password": "dockerhub_password"
+                        // }
+                        def secret = readJSON text: secretJson
+
+                        // Login to DockerHub securely
+                        // Password is passed via STDIN (not visible in logs)
+                        // This avoids exposing credentials in Jenkins console output
+                        sh """
+                          echo "${secret.password}" | docker login \
+                             -u "${secret.username}" \
+                             --password-stdin
+
+                       // Push the Docker image (built earlier) to DockerHub
+                       // Image tag uses Jenkins BUILD_NUMBER for versioning
+                       docker push $IMAGE_NAME:$IMAGE_TAG
+                       """
+                  }
+              } 
+           }
+         }
+       }
         stage('Deploy Container') {
             steps {
                 sh '''
