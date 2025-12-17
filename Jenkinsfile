@@ -48,7 +48,7 @@ pipeline {
             steps {
                script {
                     sh """
-                        set +x
+                        set +x  #disables command echoing for all sensitive operations.
 
                         # Fetch secret JSON
                         secretJson=\$(aws secretsmanager get-secret-value \
