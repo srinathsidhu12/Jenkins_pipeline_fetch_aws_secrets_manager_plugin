@@ -44,30 +44,22 @@ pipeline {
             }
         }
 
-        stage('Push to DockerHub using aws secret manager credentials') {
+        stage('Docker Push') {
             steps {
-               script {
-                    sh """
-                        set +x  #disables command echoing for all sensitive operations.
-
-                        # Fetch secret JSON
-                        secretJson=\$(aws secretsmanager get-secret-value \
-                          --secret-id my_dockerhub_cred \
-                          --query SecretString --output text)
-
-                        # Extract username and password
-                        dockerUser=\$(echo "\$secretJson" | jq -r .username)
-                        dockerPass=\$(echo "\$secretJson" | jq -r .password)
-
-                        # Login and push
-                        echo "\$dockerPass" | docker login -u "\$dockerUser" --password-stdin
-                        docker push $IMAGE_NAME:$IMAGE_TAG
-
-                        set -x
-                    """
-              }
-           }
+                withCredentials([usernamePassword(
+                        credentialsId: 'my-dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    //Login to DockerHub securely and Push image to remote registry
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin    
+                    docker push $IMAGE_NAME:$IMAGE_TAG     
+                    '''
+                }
+            }
         }
+
         stage('Deploy Container') {
             steps {
                 sh '''
